@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
@@ -262,8 +260,6 @@ app.get("/check-alerts", (req, res) => {
     if (medicalIssues.length === 0) {
       return res.json({ upcomingAppointments: [], medicineAlerts: [] });
     }
-    // console.log("Medical Issues:", medicalIssues);
-
     const placeholders = medicalIssues.map(() => "?").join(",");
     const medicineQuery = `
     SELECT * FROM medicines 
@@ -325,7 +321,7 @@ app.post("/send-mail", (req, res) => {
 
 // Submit Appointment
 app.post("/submit-appointment", (req, res) => {
-  console.log(req.body); // Log the incoming data for debugging
+  console.log(req.body);
 
   const {
     clientName,
@@ -351,7 +347,6 @@ app.post("/submit-appointment", (req, res) => {
     console.log("Missing required fields");
     return res.status(400).json({ message: "All fields are required" });
   }
-
   const sql = `
         INSERT INTO clients 
         (client_name, pet_name, pet_type, medical_history, height, weight, last_appointment, upcoming_appointment)
@@ -379,7 +374,6 @@ app.post("/submit-appointment", (req, res) => {
   });
 });
 
-// GET ALL Clients
 app.get("/get-clients", (req, res) => {
   const sql = `SELECT * FROM clients`;
 
@@ -392,7 +386,6 @@ app.get("/get-clients", (req, res) => {
   });
 });
 
-// GET ALL Medicines
 app.get("/get-medicines", (req, res) => {
   const sql = `SELECT * FROM medicines`;
 
@@ -405,7 +398,6 @@ app.get("/get-medicines", (req, res) => {
   });
 });
 
-// DELETE Client by ID
 app.delete("/delete-client/:id", (req, res) => {
   const { id } = req.params;
   const sql = `DELETE FROM clients WHERE id = ?`;
@@ -419,7 +411,6 @@ app.delete("/delete-client/:id", (req, res) => {
   });
 });
 
-// DELETE Medicine by ID
 app.delete("/delete-medicine/:id", (req, res) => {
   const { id } = req.params;
   const sql = `DELETE FROM medicines WHERE id = ?`;
@@ -432,7 +423,8 @@ app.delete("/delete-medicine/:id", (req, res) => {
     res.json({ message: "Medicine deleted successfully!" });
   });
 });
-// ----------------- CRON JOB -----------------
+
+//------------------------------------------------------------------------------------------
 
 cron.schedule("* * * * *", () => {
   console.log(":) Running daily alert check");
@@ -450,7 +442,7 @@ cron.schedule("* * * * *", () => {
       let messageBody = "";
 
       if (upcomingAppointments.length > 0) {
-        messageBody += " *Upcoming Appointments:*\n";
+        messageBody += " *📅Upcoming Appointments:*\n";
         upcomingAppointments.forEach((a) => {
           messageBody += `• ${a.client_name} – ${a.pet_name} on ${moment(
             a.upcoming_appointment
@@ -458,9 +450,8 @@ cron.schedule("* * * * *", () => {
         });
         messageBody += "\n";
       }
-
       if (medicineAlerts.length > 0) {
-        messageBody += " *Low Stock Medicines:*\n";
+        messageBody += " *⚠️Low Stock Medicines:*\n";
         medicineAlerts.forEach((m) => {
           messageBody += `• ${m.medicine_name} (for ${m.disease}) – Only ${m.quantity} left\n`;
         });
@@ -477,17 +468,13 @@ cron.schedule("* * * * *", () => {
           to: process.env.TWILIO_WHATSAPP_TO,
           body: messageBody,
         })
-        .then((message) => console.log("WhatsApp alert sent 🟢:", message.sid))
-        .catch((err) => console.error("Error sending WhatsApp 🔴:", err));
+        .then((message) => console.log("🟢WhatsApp alert sent:", message.sid))
+        .catch((err) => console.error("🔵Error sending WhatsApp:", err));
     })
     .catch((err) => {
       console.error("Error during scheduled alert check:", err.message);
     });
 });
-app.get('/', (req, res) => {
-  res.send('Server is working. Welcome to ADAMS!');
-});
-
 app.listen(PORT, () => {
-  console.log(`Server running 🟢 on http://localhost:${PORT}`);
+  console.log(`🟢Server running on http://localhost:${PORT}`);
 });
